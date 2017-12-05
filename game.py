@@ -14,6 +14,7 @@ WRITE_MAP = False
 #Shows all dividers and slots in status bar, " | stuff |  | morestuff" for True, "stuff | morestuff" for False
 SHOW_ALL_STATUS_GAPS = False
 
+SCALING = 1
 
 #CHEATS:
 #HANDICAP = 7 #RADIANT
@@ -39,7 +40,7 @@ FPS = 12
 BEAMPS = 12
 BEAMCREATEPS = 4
 ENEMYPS = .8
-TRGTPS = 2
+TRGTPS = 1
 BOMBPS = 6
 CASTPS = 1
 
@@ -48,7 +49,7 @@ HELD_ITEMS_BLOCK = False
 ENEMY_MV_THRES = .2
 ENEMY_LIGHT_MV_THRES = .8
 ENEMY_HARSH_LIGHT_MV_THRES = .99
-PRED_HIDE = True
+PRED_HIDE = False
 
 INSANITY = False
 INSANITY_CHARS = "X#&@a|^v<>!=....................................."
@@ -68,7 +69,7 @@ ROCK_MAX = 6
 
 #TRAP SETTINGS
 TRAP_MAX  = 5
-TRAP_RECOVERY_MODIFIER = 1.5
+TRAP_RECOVERY_MODIFIER = 2
 
 #CAULDRON RECOVERY MODIFIER
 CAULDRON_RECOVERY_MODIFIER = 4
@@ -100,7 +101,7 @@ TORCH_MAX = 5
 TORCH_RANGE = 4
 TORCH_COST = 1
 
-pred_in_light_char = "&"
+pred_in_light_char = "X"
 if PRED_HIDE:
 	pred_in_light_char = "#"
 
@@ -113,10 +114,10 @@ if PRED_HIDE:
 #settings
 #    name ,cost,range, slope, isHarsh
 flsettingsinit = [
-	("Low"   , 1 , 4 , .4, False),
-	("Medium", 3 , 6 , .6, False),
+	("Low"   , 0 , 4 , .4, False),
+	("Medium", 2 , 6 , .6, False),
 	("High"  , 6 , 9 , .8, True ),
-	("Absurd", 15, 20, 4, True )
+	("Absurd", 10, 20, 4, True )
 ]
 #FL_SETTINGS = [None]
 
@@ -143,22 +144,24 @@ BEAM_PASSTHROUGH = 12
 PING_USAGE_COST = 5
 PING_ENERGY_COST = 2
 PING_LIMIT = 10
-
 #SUPER SIGHT PING
 #PING_PASSTHROUGH = 10
 #PING_DESTROYS = False
 #PING_SEE_AHEAD = False
 #PING_WIDE_DESTROY = False
-
 #Normal ping: ping destroys true, wide destroy false, see ahead true
 PING_PASSTHROUGH = 1
-PING_DESTROYS = True
+PING_DESTROYS_PRED = True
+PING_DESTROYS_ROCKS = True
 PING_SEE_AHEAD = False
 PING_WIDE_DESTROY = False
+PING_LINGER = True
+PING_LINGER_LENGTH = 4
+PING_LINGER_BIG = True
 #
-#
-#
-#
+
+
+
 #
 LANTERN_COST = 40
 LANTERN_RANGE = 50
@@ -437,6 +440,10 @@ class Ping(object):
 		self.pos = pos
 		self.dir = dir
 		self.passthrough = PING_PASSTHROUGH
+		
+		self.linger_length = PING_LINGER_LENGTH
+		self.lingering = False
+		
 		self.over = False
 		self.energy = 0
 		
@@ -446,22 +453,31 @@ class Ping(object):
 		self.energy += 1
 		if self.energy >= PING_ENERGY_COST:
 			self.energy -= PING_ENERGY_COST
-			p = mve(self.pos, self.dir)
-			
-			alwd = allowed(p)
-			
-			if PING_WIDE_DESTROY:
-				idx = carddrs.index(self.dir)
-				otherdirs = [mve(p, nxt) for nxt in [carddrs[(idx + 1) % 4], carddrs[(idx + 3) % 4]]]
-				alwd = alwd and all([allowed(ps) for ps in otherdirs])
-			
-			if alwd:
-				self.pos = p
-			elif self.passthrough > 0 and inGrid(p):
-				self.pos = p
-				self.passthrough -= 1
-			else:
-				self.over = True
+			if not self.lingering:
+				p = mve(self.pos, self.dir)
+				
+				alwd = allowed(p)
+				
+				if PING_WIDE_DESTROY:
+					idx = carddrs.index(self.dir)
+					otherdirs = [mve(p, nxt) for nxt in [carddrs[(idx + 1) % 4], carddrs[(idx + 3) % 4]]]
+					alwd = alwd and all([allowed(ps) for ps in otherdirs])
+				
+				if alwd:
+					self.pos = p
+				elif self.passthrough > 0 and inGrid(p):
+					self.pos = p
+					self.passthrough -= 1
+				else:
+					if PING_LINGER:
+						self.lingering = True
+					else:
+						self.over = True
+			elif self.lingering:
+				if self.linger_length > 0:
+					self.linger_length -= 1
+				else:
+					self.over = True
 		
 class FLSetting(object):
 	def __init__(self, name, cost, range, slope, is_harsh):
@@ -550,6 +566,9 @@ FL_SETTINGS = [FLSetting(*obj) for obj in flsettingsinit]
 def mve(pt1, pt2):
 	return (pt1[0] + pt2[0], pt1[1] + pt2[1])
 
+def scale(value, dim):
+	return max(1,int(value * (SCALING ** dim)))
+	
 class Grid(object):
 	def __init__(self, xm, ym): 
 		# = sight
@@ -638,7 +657,7 @@ class Grid(object):
 		while not (self.allowed(self.plyr) and (self.plyr != self.trgt)) :
 			self.plyr = (random.randint(0, xm-1), random.randint(0, ym -1))
 			
-		for i in range(PRED_INITIAL_COUNT):
+		for i in range(scale(PRED_INITIAL_COUNT, 2)):
 			pred = (random.randint(0, xm-1), random.randint(0, ym -1))
 			while not (self.allowed(pred) and (pred != self.trgt) and (pred != self.plyr)) :
 				pred = (random.randint(0, xm-1), random.randint(0, ym -1))
@@ -689,7 +708,7 @@ class Grid(object):
 		
 	def spawnPreds(self):
 		#lazy about what happens if not enough free spots. Shouldn't happen often.
-		newPreds = random.sample([(x,y) for x in range(self.xm) for y in range(self.ym) if self.allowed((x,y)) and (self.getSqEulDist(self.plyr, (x,y)) > PRED_SPAWN_SQDIST)], PRED_PER_LEVEL)
+		newPreds = random.sample([(x,y) for x in range(self.xm) for y in range(self.ym) if self.allowed((x,y)) and (self.getSqEulDist(self.plyr, (x,y)) > scale(PRED_SPAWN_SQDIST, 2))], scale(PRED_PER_LEVEL, 2))
 		self.preds.extend(newPreds)
 		
 	def dropFLSetting(self):
@@ -809,10 +828,10 @@ class Grid(object):
 		if (x,y) in [beam.pos for beam in self.beams]:
 			return "+"
 			
-		if (x,y) in [ping.pos for ping in self.pings if ping.dir in (N,S)]:
+		if (x,y) in [ping.pos for ping in self.pings if ping.dir in (N,S) and not ping.lingering]:
 			return "\""
 		
-		if (x,y) in [ping.pos for ping in self.pings if ping.dir in (E, W)]:
+		if (x,y) in [ping.pos for ping in self.pings if ping.dir in (E, W) and not ping.lingering]:
 			return ":"
 		
 		if (x,y) in [snk.position for snk in self.snakes if not snk.foundWall]:
@@ -1131,6 +1150,11 @@ class Grid(object):
 		
 		
 		result.update([mve(ping.pos, dr) for dr in carddrs if dr != ping.dir or PING_SEE_AHEAD])
+		
+		if PING_LINGER_BIG and ping.lingering:
+			i = alldrs.index(ping.dir)
+			result.update([mve(ping.pos, alldrs[(i + j) % 8]) for j in (-1, 0, 1)])
+		
 		result.update([ping.pos])
 		
 		#return [(bx + i), (by + j) for i in (-1, 0, ]
@@ -1336,7 +1360,7 @@ class Grid(object):
 		
 
 		
-		if len(alloweddirs) and ((self.getDist(self.plyr, pred) > PRED_THRESH) or (not self.hasAvailableStraightLine(self.plyr, pred))):
+		if len(alloweddirs) and ((self.getDist(self.plyr, pred) > scale(PRED_THRESH, 2)) or (not self.hasAvailableStraightLine(self.plyr, pred))):
 			newpred = mve(pred, random.choice(alloweddirs))
 			self.preds.remove(pred)
 			self.preds.append(newpred)
@@ -1367,7 +1391,7 @@ class Grid(object):
 						self.preds.append(randpred)
 						return
 		
-		if PING_DESTROYS:
+		if PING_DESTROYS_PRED:
 			for p in self.pings[:]:
 				if newpred == p.pos:
 					self.preds.remove(newpred)
@@ -1632,7 +1656,7 @@ class Grid(object):
 							randpred = (random.randint(0, self.xm-1), random.randint(0, self.ym -1))
 						self.preds.append(randpred)
 						
-			if PING_DESTROYS:
+			if PING_DESTROYS_ROCKS:
 				for ping in self.pings:
 					if ping.pos in self.rocks[:]:
 						self.rocks.remove(ping.pos)
@@ -1647,7 +1671,10 @@ class Grid(object):
 								self.discovered.remove(p)
 							x,y	= p
 							self.map[y][x] = " "
-							
+			
+			if PING_DESTROYS_PRED:
+				for ping in self.pings:
+					if PING_WIDE_DESTROY:
 						idx = carddrs.index(ping.dir)
 						otherpts = [mve(ping.pos, nxt) for nxt in [carddrs[(idx + 1) % 4], carddrs[(idx + 3) % 4]]]
 						for pt in otherpts:
@@ -2137,8 +2164,8 @@ def startGame():
 	again = "Y"
 	#xm = int(input("Width? "), 10)
 	#ym = int(input("Height? "), 10)
-	xm = 70
-	ym = 41
+	xm = scale(70,1)
+	ym = scale(40,1)
 	
 	wins = 0
 	losses = 0 
