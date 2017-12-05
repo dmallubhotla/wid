@@ -63,7 +63,7 @@ def set_constants():
 
 
 
-def delay_func(tm = .2):
+def delay_func(tm = .1):
 	sleep(tm)
 	print()
 	#input()
