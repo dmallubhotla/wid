@@ -3,6 +3,7 @@ import os
 import time 
 import msvcrt
 import curses
+import math
 
 import dungeon_map as map
 
@@ -949,9 +950,15 @@ class Grid(object):
 				step = 1
 			else:
 				step = -1
+
+			if dy > 0:
+				rnd = math.ceil
+			else:
+				rnd = math.floor
+
 			for i in range(0, dx, step):
 				px = x1 + i
-				py = int(slope* (i) + y1)
+				py = int(rnd(slope* (i) + y1))
 				testpoint = (px, py)
 				if limit is not None and (self.getSqEulDist(testpoint, p1) > (limit ** 2)):
 					return retlist
@@ -961,15 +968,19 @@ class Grid(object):
 				if not self.allowed(testpoint) and past > 0:
 					past -= 1
 		else:
-		
 			slope = dx / dy
 			if dy > 0:
 				step = 1
 			else:
 				step = -1
+
+			if dx > 0:
+				rnd = math.ceil
+			else:
+				rnd = math.floor
 			for i in range(0, dy, step):
 				py = y1 + i
-				px = int(slope* (i) + x1)
+				px = int(rnd(slope* (i) + x1))
 				testpoint = (px, py)
 				if limit is not None and (self.getSqEulDist(testpoint, p1) > (limit ** 2)):
 					return retlist
@@ -1212,7 +1223,7 @@ class Grid(object):
 				boundy = ply - flrange
 			else:
 				boundy = ply + flrange
-			boundary = [(x, boundy) for x in range(minx, maxx + 2)]
+			boundary = [(x, boundy) for x in range(minx, maxx + 1)]
 		elif self.lastmovop in (E, W):
 			ply += .5 
 			miny = int(ply - (flrange * slope))
@@ -1221,7 +1232,7 @@ class Grid(object):
 				boundx = plx - flrange
 			else:
 				boundx = plx + flrange
-			boundary = [(boundx, y) for y in range(miny, maxy + 2)]
+			boundary = [(boundx, y) for y in range(miny, maxy + 1)]
 		result = set()
 		for pt in boundary:
 			result.update(self.getAttemptedPathTo(self.plyr, pt))
