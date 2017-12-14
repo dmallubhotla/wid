@@ -226,7 +226,7 @@ SNKC = "SNKC"
 PKUP = "PKUP"
 PING = "PING"
 
-trgtdrs = [NE, E, SE, S, SW, W, NW, N]
+trgtdrs = [NE, E, SE, S, SW, W, NW, N, NOP]
 carddrs = [N, E, S, W]
 alldrs = [NE, E, SE, S, SW, W, NW, N]
 
