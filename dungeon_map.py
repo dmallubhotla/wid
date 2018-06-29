@@ -17,7 +17,7 @@ BIAS_STRAIGHT = False
 MIN_ROOM_DIM = 3
 ROOM_VAR = 5
 
-WRITE_MAP_SETTINGS = False
+WRITE_MAP_SETTINGS = True
 ANIMATE = False and __name__=="__main__"
 
 
@@ -26,8 +26,8 @@ def set_constants():
 	ROUGH_THRES = random.random() * .3
 	FAILED_ATTEMPTS = random.randint(0, 40)
 	BIAS_STRAIGHT = random.randint(0, 1)
-	MIN_ROOM_DIM = random.randint(2, 5)
-	ROOM_VAR = random.randint(2, 6)
+	MIN_ROOM_DIM = random.randint(3, 5)
+	ROOM_VAR = random.randint(3, 6)
 	
 	#DOOR_THRES = 0.32234678069988054
 	#ROUGH_THRES = 0.14971437014511607

@@ -10,7 +10,7 @@ import dungeon_map as map
 #PREFERENCES
 #Uses Dvorak keyboard, set with USE_DVORAK = True  or USE_DVORAK = False
 USE_DVORAK = True
-WRITE_MAP = False
+WRITE_MAP = True
 
 #Shows all dividers and slots in status bar, " | stuff |  | morestuff" for True, "stuff | morestuff" for False
 SHOW_ALL_STATUS_GAPS = False
@@ -19,7 +19,7 @@ SCALING = 1
 
 #CHEATS:
 #HANDICAP = 7 #RADIANT
-HANDICAP = 0
+HANDICAP = 1
 START_FL    = False
 START_TORCH = False
 START_BEAM  = False
@@ -73,11 +73,11 @@ TRAP_MAX  = 5
 TRAP_RECOVERY_MODIFIER = 2
 
 #CAULDRON RECOVERY MODIFIER
-CAULDRON_RECOVERY_MODIFIER = 4
+CAULDRON_RECOVERY_MODIFIER = 5
 CAULDRON_REMOVES_LIGHT = False
 ALLOW_CAULDRON_ACTION = False
 CAULDRON_PROVIDES_LIGHT = True
-CAULDRON_RANGE = 4
+CAULDRON_RANGE = 3
 
 #SNAKE
 SNAKE_MAX = 9
@@ -99,7 +99,7 @@ BOMB_DEBRIS = ",;:\"'-_/\\{}[]"
 
 #TORCH_SETTINGS
 TORCH_MAX = 5
-TORCH_RANGE = 4
+TORCH_RANGE = 6
 TORCH_COST = 1
 
 pred_in_light_char = "X"
@@ -135,6 +135,7 @@ PRED_INITIAL_COUNT = 2 + (HANDICAP * PRED_PER_LEVEL)
 CAST_MAX = 4
 MAX_CAST_AGE = 30
 CAST_COST = 2
+CAST_DISCOVER = True
 
 #BEAM SETTINGS
 BEAM_COST = 3
@@ -1930,7 +1931,13 @@ class Grid(object):
 					visiblePoints.update(self.getPointsInFlashlight())
 				
 				for cast in self.casts:
-					visiblePoints.update(self.getPointsInView(cast.pos, limit=self.getCastRange()))
+					castPoints = self.getPointsInView(cast.pos, limit=self.getCastRange())
+					if CAST_DISCOVER:
+						items = self.getItemPositionList()
+						for pt in castPoints:
+							if pt in items and pt not in self.discovered:
+								self.discovered.append(pt)
+					visiblePoints.update(castPoints)
 					
 				for torch in self.torches:
 					visiblePoints.update(self.getPointsInView(torch, limit = TORCH_RANGE))
